@@ -12,8 +12,6 @@ declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
-use function Amp\asyncCall;
-
 final class Consumer
 {
     /**
@@ -51,7 +49,7 @@ final class Consumer
                 }
 
                 /** @psalm-suppress MixedArgumentTypeCoercion */
-                asyncCall($this->listeners[$tag], $message, $this->channel);
+                $this->listeners[$tag]($message, $this->channel);
             }
         );
     }

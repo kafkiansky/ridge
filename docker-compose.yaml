@@ -1,0 +1,17 @@
+version: '3.0'
+
+services:
+  rabbit:
+    image: rabbitmq:3.7.7-management-alpine
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: root
+      RABBITMQ_DEFAULT_PASS: secret
+    volumes:
+      - rabbit:/var/lib/rabbitmq:delegated
+    ports:
+      - "127.0.0.1:5673:5672"
+      - "127.0.0.1:15673:15672"
+
+volumes:
+  rabbit:

@@ -10,13 +10,13 @@
 
 namespace PHPinnacle\Ridge\Tests;
 
-use Amp\Deferred;
-use Amp\Loop;
+use Amp\DeferredFuture;
 use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
 use PHPinnacle\Ridge\Exception;
 use PHPinnacle\Ridge\Message;
 use PHPinnacle\Ridge\Queue;
+use Revolt\EventLoop;
 
 class ChannelTest extends AsyncTest
 {
@@ -25,29 +25,29 @@ class ChannelTest extends AsyncTest
         self::expectException(Exception\ChannelException::class);
 
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        $promise = $channel->open();
+        $future = $channel->open();
 
-        self::assertPromise($promise);
+        self::assertFuture($future);
 
-        yield $promise;
+        $future->await();
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testClose(Client $client)
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        $promise = $channel->close();
+        $future = $channel->close();
 
-        self::assertPromise($promise);
+        self::assertFuture($future);
 
-        yield $promise;
+        $future->await();
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testCloseAlreadyClosedChannel(Client $client)
@@ -55,159 +55,159 @@ class ChannelTest extends AsyncTest
         self::expectException(Exception\ChannelException::class);
 
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
         try {
-            yield $channel->close();
-            yield $channel->close();
+            $channel->close()->await();
+            $channel->close()->await();
         } finally {
-            yield $client->disconnect();
+            $client->disconnect()->await();
         }
     }
 
     public function testExchangeDeclare(Client $client)
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        $promise = $channel->exchangeDeclare('test_exchange', 'direct', false, false, true);
+        $future = $channel->exchangeDeclare('test_exchange', 'direct', false, false, true);
 
-        self::assertPromise($promise);
+        self::assertFuture($future);
 
-        yield $promise;
+        $future->await();
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testExchangeDelete(Client $client)
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        yield $channel->exchangeDeclare('test_exchange_no_ad', 'direct');
+        $channel->exchangeDeclare('test_exchange_no_ad', 'direct')->await();
 
-        $promise = $channel->exchangeDelete('test_exchange_no_ad');
+        $future = $channel->exchangeDelete('test_exchange_no_ad');
 
-        self::assertPromise($promise);
+        self::assertFuture($future);
 
-        yield $promise;
+        $future->await();
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testQueueDeclare(Client $client)
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        $promise = $channel->queueDeclare('test_queue', false, false, false, true);
+        $future = $channel->queueDeclare('test_queue', false, false, false, true);
 
-        self::assertPromise($promise);
+        self::assertFuture($future);
 
         /** @var Queue $queue */
-        $queue = yield $promise;
+        $queue = $future->await();
 
         self::assertInstanceOf(Queue::class, $queue);
         self::assertSame('test_queue', $queue->name());
         self::assertSame(0, $queue->messages());
         self::assertSame(0, $queue->consumers());
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testQueueBind(Client $client)
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        yield $channel->exchangeDeclare('test_exchange', 'direct', false, false, true);
-        yield $channel->queueDeclare('test_queue', false, false, false, true);
+        $channel->exchangeDeclare('test_exchange', 'direct', false, false, true)->await();
+        $channel->queueDeclare('test_queue', false, false, false, true)->await();
 
-        $promise = $channel->queueBind('test_queue', 'test_exchange');
+        $future = $channel->queueBind('test_queue', 'test_exchange');
 
-        self::assertPromise($promise);
+        self::assertFuture($future);
 
-        yield $promise;
+        $future->await();
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testQueueUnbind(Client $client)
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        yield $channel->exchangeDeclare('test_exchange', 'direct', false, false, true);
-        yield $channel->queueDeclare('test_queue', false, false, false, true);
-        yield $channel->queueBind('test_queue', 'test_exchange');
+        $channel->exchangeDeclare('test_exchange', 'direct', false, false, true)->await();
+        $channel->queueDeclare('test_queue', false, false, false, true)->await();
+        $channel->queueBind('test_queue', 'test_exchange')->await();
 
-        $promise = $channel->queueUnbind('test_queue', 'test_exchange');
+        $future = $channel->queueUnbind('test_queue', 'test_exchange');
 
-        self::assertPromise($promise);
+        self::assertFuture($future);
 
-        yield $promise;
+        $future->await();
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testQueuePurge(Client $client)
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        yield $channel->queueDeclare('test_queue', false, false, false, true);
-        yield $channel->publish('test', '', 'test_queue');
-        yield $channel->publish('test', '', 'test_queue');
+        $channel->queueDeclare('test_queue', false, false, false, true)->await();
+        $channel->publish('test', '', 'test_queue')->await();
+        $channel->publish('test', '', 'test_queue')->await();
 
-        $promise = $channel->queuePurge('test_queue');
+        $future = $channel->queuePurge('test_queue');
 
-        $messages = yield $promise;
+        $messages = $future->await();
 
-        self::assertPromise($promise);
+        self::assertFuture($future);
         self::assertEquals(2, $messages);
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testQueueDelete(Client $client)
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        yield $channel->queueDeclare('test_queue_no_ad');
-        yield $channel->publish('test', '', 'test_queue_no_ad');
+        $channel->queueDeclare('test_queue_no_ad')->await();
+        $channel->publish('test', '', 'test_queue_no_ad')->await();
 
-        $promise = $channel->queueDelete('test_queue_no_ad');
+        $future = $channel->queueDelete('test_queue_no_ad');
 
-        $messages = yield $promise;
+        $messages = $future->await();
 
-        self::assertPromise($promise);
+        self::assertFuture($future);
         self::assertEquals(1, $messages);
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testPublish(Client $client)
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        $promise = $channel->publish('test publish');
+        $future = $channel->publish('test publish');
 
-        self::assertPromise($promise);
-        self::assertNull(yield $promise);
+        self::assertFuture($future);
+        self::assertNull($future->await());
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testMandatoryPublish(Client $client)
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        $deferred = new Deferred();
-        $watcher  = Loop::delay(100, function () use ($deferred) {
-            $deferred->resolve(false);
+        $deferred = new DeferredFuture();
+        $watcher  = EventLoop::delay(100, function () use ($deferred) {
+            $deferred->complete(false);
         });
 
         $channel->events()->onReturn(function (Message $message) use ($deferred, $watcher) {
@@ -220,16 +220,16 @@ class ChannelTest extends AsyncTest
             self::assertFalse($message->redelivered);
             self::assertTrue($message->returned);
 
-            Loop::cancel($watcher);
+            EventLoop::cancel($watcher);
 
-            $deferred->resolve(true);
+            $deferred->complete(true);
         });
 
-        yield $channel->publish('.', '', '404', [], true);
+        $channel->publish('.', '', '404', [], true)->await();
 
-        self::assertTrue(yield $deferred->promise(), 'Mandatory return event not received!');
+        self::assertTrue($deferred->getFuture()->await(), 'Mandatory return event not received!');
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testImmediatePublish(Client $client)
@@ -238,50 +238,50 @@ class ChannelTest extends AsyncTest
 
         // RabbitMQ 3 doesn't support "immediate" publish flag.
         if ($properties->product() === 'RabbitMQ' && version_compare($properties->version(), '3.0', '>')) {
-            yield $client->disconnect();
+            $client->disconnect()->await();
 
             return;
         }
 
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        $deferred = new Deferred();
-        $watcher  = Loop::delay(100, function () use ($deferred) {
-            $deferred->resolve(false);
+        $deferred = new DeferredFuture();
+        $watcher  = EventLoop::delay(100, function () use ($deferred) {
+            $deferred->complete(false);
         });
 
         $channel->events()->onReturn(function (Message $message) use ($deferred, $watcher) {
             self::assertTrue($message->returned);
 
-            Loop::cancel($watcher);
+            EventLoop::cancel($watcher);
 
-            $deferred->resolve(true);
+            $deferred->complete(true);
         });
 
-        yield $channel->queueDeclare('test_queue', false, false, false, true);
-        yield $channel->publish('.', '', 'test_queue', [], false, true);
+        $channel->queueDeclare('test_queue', false, false, false, true)->await();
+        $channel->publish('.', '', 'test_queue', [], false, true)->await();
 
-        self::assertTrue(yield $deferred->promise(), 'Immediate return event not received!');
+        self::assertTrue($deferred->getFuture()->await(), 'Immediate return event not received!');
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testConsume(Client $client)
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
 
-        yield $channel->queueDeclare('test_queue', false, false, false, true);
-        yield $channel->publish('hi', '', 'test_queue');
+        $channel->queueDeclare('test_queue', false, false, false, true)->await();
+        $channel->publish('hi', '', 'test_queue')->await();
     
         /** @noinspection PhpUnusedLocalVariableInspection */
-        $tag = yield $channel->consume(function (Message $message) use ($client, &$tag) {
+        $tag = $channel->consume(function (Message $message) use ($client, &$tag) {
             self::assertEquals('hi', $message->content);
             self::assertEquals($tag, $message->consumerTag);
 
-            yield $client->disconnect();
-        }, 'test_queue', false, true);
+            $client->disconnect()->await();
+        }, 'test_queue', false, true)->await();
     }
 
     public function testCancel(Client $client)

@@ -13,56 +13,57 @@ namespace PHPinnacle\Ridge\Tests;
 use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
 use PHPinnacle\Ridge\Message;
+use Revolt\EventLoop;
 
 class ClientTest extends AsyncTest
 {
     public function testOpenChannel(Client $client)
     {
-        self::assertPromise($promise = $client->channel());
-        self::assertInstanceOf(Channel::class, yield $promise);
+        self::assertFuture($future = $client->channel());
+        self::assertInstanceOf(Channel::class, $future->await());
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testOpenMultipleChannel(Client $client)
     {
         /** @var Channel $channel1 */
         /** @var Channel $channel2 */
-        $channel1 = yield $client->channel();
-        $channel2 = yield $client->channel();
+        $channel1 = $client->channel()->await();
+        $channel2 = $client->channel()->await();
 
         self::assertInstanceOf(Channel::class, $channel1);
         self::assertInstanceOf(Channel::class, $channel2);
         self::assertNotEquals($channel1->id(), $channel2->id());
 
         /** @var Channel $channel3 */
-        $channel3 = yield $client->channel();
+        $channel3 = $client->channel()->await();
 
         self::assertInstanceOf(Channel::class, $channel3);
         self::assertNotEquals($channel1->id(), $channel3->id());
         self::assertNotEquals($channel2->id(), $channel3->id());
 
-        yield $client->disconnect();
+        $client->disconnect()->await();
     }
 
     public function testDisconnectWithBufferedMessages(Client $client)
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
+        $channel = $client->channel()->await();
         $count   = 0;
 
-        yield $channel->qos(0, 1000);
-        yield $channel->queueDeclare('disconnect_test', false, false, false, true);
-        yield $channel->consume(function (Message $message, Channel $channel) use ($client, &$count) {
-            yield $channel->ack($message);
+        $channel->qos(0, 1000)->await();
+        $channel->queueDeclare('disconnect_test', false, false, false, true)->await();
+        $channel->consume(function (Message $message, Channel $channel) use ($client, &$count) {
+            $channel->ack($message)->await();
 
             self::assertEquals(1, ++$count);
 
-            yield $client->disconnect();
+            $client->disconnect()->await();
         }, 'disconnect_test');
 
-        yield $channel->publish('.', '', 'disconnect_test');
-        yield $channel->publish('.', '', 'disconnect_test');
-        yield $channel->publish('.', '', 'disconnect_test');
+        $channel->publish('.', '', 'disconnect_test')->await();
+        $channel->publish('.', '', 'disconnect_test')->await();
+        $channel->publish('.', '', 'disconnect_test')->await();
     }
 }

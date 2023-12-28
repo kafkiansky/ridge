@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
-use function Amp\asyncCall;
+use function Amp\async;
 
 final class Events
 {
@@ -55,7 +55,7 @@ final class Events
                 }
 
                 /** @psalm-suppress MixedArgumentTypeCoercion */
-                asyncCall($listener, $message, $this->channel);
+                async($listener, $message, $this->channel);
             }
         );
 
@@ -71,7 +71,7 @@ final class Events
             $frame,
             function (Protocol\AcknowledgmentFrame $frame) use ($callback) {
                 /** @psalm-suppress MixedArgumentTypeCoercion */
-                asyncCall($callback, $frame->deliveryTag, $frame->multiple, $this->channel);
+                async($callback, $frame->deliveryTag, $frame->multiple, $this->channel);
             }
         );
     }

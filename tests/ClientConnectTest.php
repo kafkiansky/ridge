@@ -10,52 +10,28 @@
 
 namespace PHPinnacle\Ridge\Tests;
 
-use Amp\Loop;
 use Amp\Socket\ConnectException;
-use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
-use PHPinnacle\Ridge\Message;
 
 class ClientConnectTest extends RidgeTest
 {
     public function testConnect()
     {
-        Loop::run(function () {
-            $client = self::client();
+        $client = self::client();
 
-            $promise = $client->connect();
+        $client->connect();
 
-            self::assertPromise($promise);
+        self::assertTrue($client->isConnected());
 
-            yield $promise;
-
-            self::assertTrue($client->isConnected());
-
-            yield $client->disconnect();
-        });
+        $client->disconnect();
     }
 
     public function testConnectFailure()
     {
         self::expectException(ConnectException::class);
 
-        Loop::run(function () {
-            $client = Client::create('amqp://127.0.0.2:5673');
+        $client = Client::create('amqp://127.0.0.2:5673?timeout=1');
 
-            yield $client->connect();
-        });
+        $client->connect();
     }
-//
-//    public function testConnectAuth()
-//    {
-//        $client = new Client([
-//            'user' => 'testuser',
-//            'password' => 'testpassword',
-//            'vhost' => 'testvhost',
-//        ]);
-//        $client->connect();
-//        $client->disconnect();
-//
-//        $this->assertTrue(true);
-//    }
 }
