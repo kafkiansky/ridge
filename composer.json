@@ -18,15 +18,14 @@
     }
   ],
   "require": {
-    "php": ">=8.0",
-    "amphp/amp": "v2.6.*",
-    "amphp/socket": "v1.2.*",
+    "php": ">=8.1",
+    "amphp/amp": "^3.0",
+    "amphp/socket": "^2.2",
     "phpinnacle/buffer": "v1.2.*"
   },
   "require-dev": {
-    "phpunit/phpunit": "v9.5.*",
-    "vimeo/psalm": "v4.19.*",
-    "phpstan/phpstan": "v1.4.*"
+    "phpstan/phpstan": "v1.4.*",
+    "phpunit/phpunit": "v9.5.*"
   },
   "prefer-stable": true,
   "autoload": {

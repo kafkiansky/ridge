@@ -10,9 +10,6 @@
 
 namespace PHPinnacle\Ridge\Tests;
 
-use Amp\Loop;
-use function Amp\call;
-
 abstract class AsyncTest extends RidgeTest
 {
     /**
@@ -41,37 +38,44 @@ abstract class AsyncTest extends RidgeTest
 
     protected function runTestAsync(...$args)
     {
-        $return = null;
-
         try {
-            Loop::run(function () use (&$return, $args) {
-                $client = self::client();
+            $client = self::client();
+            $client->connect();
 
-                yield $client->connect();
+            \array_unshift($args, $client);
 
-                \array_unshift($args, $client);
+            $return = $this->{$this->realTestName}(...$args);
 
-                $return = yield call([$this, $this->realTestName], ...$args);
+            $client->disconnect();
 
-                yield $client->disconnect();
-
-                $info  = Loop::getInfo();
-                $count = $info['enabled_watchers']['referenced'];
-
-                if ($count !== 0) {
-                    $message = "Still have {$count} loop watchers.";
-
-                    foreach (['defer', 'delay', 'repeat', 'on_readable', 'on_writable'] as $key) {
-                        $message .= " {$key} - {$info[$key]['enabled']}.";
-                    }
-
-                    self::markTestIncomplete($message);
-
-                    Loop::stop();
-                }
-            });
+//            Loop::run(function () use (&$return, $args) {
+//                $client = self::client();
+//
+//                $client->connect();
+//
+//                \array_unshift($args, $client);
+//
+//                $return = yield call([$this, $this->realTestName], ...$args);
+//
+//                yield $client->disconnect();
+//
+//                $info  = Loop::getInfo();
+//                $count = $info['enabled_watchers']['referenced'];
+//
+//                if ($count !== 0) {
+//                    $message = "Still have {$count} loop watchers.";
+//
+//                    foreach (['defer', 'delay', 'repeat', 'on_readable', 'on_writable'] as $key) {
+//                        $message .= " {$key} - {$info[$key]['enabled']}.";
+//                    }
+//
+//                    self::markTestIncomplete($message);
+//
+//                    Loop::stop();
+//                }
+//            });
         } finally {
-            Loop::set((new Loop\DriverFactory)->create());
+//            Loop::set((new Loop\DriverFactory)->create());
 
             \gc_collect_cycles();
         }

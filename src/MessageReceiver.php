@@ -12,8 +12,6 @@ declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
-use function Amp\asyncCall;
-
 final class MessageReceiver
 {
     public const
@@ -192,7 +190,7 @@ final class MessageReceiver
 
         foreach ($this->callbacks as $callback) {
             /** @psalm-suppress MixedArgumentTypeCoercion */
-            asyncCall($callback, $message);
+            $callback($message);
         }
 
         $this->state = self::STATE_WAIT;
