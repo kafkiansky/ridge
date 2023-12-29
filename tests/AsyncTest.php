@@ -10,9 +10,6 @@
 
 namespace PHPinnacle\Ridge\Tests;
 
-
-use function Amp\async;
-
 abstract class AsyncTest extends RidgeTest
 {
     /**
@@ -41,17 +38,15 @@ abstract class AsyncTest extends RidgeTest
 
     protected function runTestAsync(...$args)
     {
-        $return = null;
-
         try {
             $client = self::client();
             $client->connect();
 
             \array_unshift($args, $client);
 
-            $return = async(\Closure::fromCallable([$this, $this->realTestName]), ...$args)->await();
+            $return = $this->{$this->realTestName}(...$args);
 
-            $client->disconnect()->await();
+            $client->disconnect();
 
 //            Loop::run(function () use (&$return, $args) {
 //                $client = self::client();

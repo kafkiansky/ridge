@@ -18,7 +18,6 @@ use PHPinnacle\Ridge\Exception\ConnectionException;
 use Revolt\EventLoop;
 use function Amp\async, Amp\now, Amp\Socket\connect;
 use Amp\Socket\ConnectContext;
-use Amp\Future;
 use Amp\Socket\Socket;
 use PHPinnacle\Ridge\Protocol\AbstractFrame;
 
@@ -78,16 +77,15 @@ final class Connection
     {
         $this->lastWrite = now();
 
-        if ($this->socket !== null) {
-            try {
-                $this->socket->write($payload->flush());
-                return;
-            } catch (\Throwable $throwable) {
-                throw ConnectionException::writeFailed($throwable);
-            }
+        if ($this->socket === null) {
+            throw ConnectionException::socketClosed();
         }
 
-        throw ConnectionException::socketClosed();
+        try {
+            $this->socket->write($payload->flush());
+        } catch (\Throwable $throwable) {
+            throw ConnectionException::writeFailed($throwable);
+        }
     }
 
     /**
@@ -137,9 +135,8 @@ final class Connection
         $this->socket = connect($this->uri, $context);
         $this->lastRead = now();
 
-        // Or maybe async?
-        EventLoop::queue(
-            function () {
+        async(
+            function (): void {
                 if ($this->socket === null) {
                     throw ConnectionException::socketClosed();
                 }
@@ -171,7 +168,7 @@ final class Connection
     {
         $this->heartbeatWatcherId = EventLoop::repeat(
             $interval,
-            function (string $watcherId) use ($interval){
+            function (string $watcherId) use ($interval): void {
                 $currentTime = now();
 
                 if (null !== $this->socket) {
